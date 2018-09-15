@@ -32,7 +32,7 @@ func NoerrByDepth(err error, depth int) bool {
 	return true
 }
 func T2s(tm time.Time) string {
-	return tm.Format("20160102150405")
+	return tm.Format("2016-01-02 15:04:05")
 }
 func S2f(s string) float64 {
 	f, _ := strconv.ParseFloat(s, 64)

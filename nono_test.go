@@ -6,5 +6,8 @@ import (
 )
 
 func Test_Any(tt *testing.T) {
-	fmt.Println(Hex2Diff("0x0000000112e0be826d694b2e62d01511f12a6061fbaec8bc02357593e70e52ba").Int64())
+	a := AesEncrypt(`{"name":"zhangsan","age":23,"email":"chentging@aliyun.com"}`, "321")
+	fmt.Println(a)
+	b := AesDecrypt(a, "321")
+	fmt.Println(b)
 }
