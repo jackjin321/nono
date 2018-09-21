@@ -31,7 +31,7 @@ func (t *NonoRedis) SetCache(key string, value func() string) error {
 
 //var cache *redis.Client
 func (t *NonoRedis) Limit(key string, times int64, extime time.Duration) bool {
-	r := t.GetRedisByDb(11)
+	r := t.GetRedisByDb(6)
 
 	if cmd := r.Incr("limit." + key); cmd.Val() > times {
 		return false
