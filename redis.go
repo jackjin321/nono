@@ -23,6 +23,7 @@ func (t *NonoRedis) GetCache(key string) (string, error, bool) {
 	r := t.GetRedisByDb(7)
 	result := r.Get(key)
 	return result.String(), result.Err(), false
+
 }
 func (t *NonoRedis) SetCache(key string, value func() string) error {
 	return nil
