@@ -31,7 +31,7 @@ func (t *NonoRedis) SetCache(key string, value func() string) error {
 
 //var cache *redis.Client
 func (t *NonoRedis) Limit(key string, times int64, extime time.Duration) bool {
-	r := t.GetRedisByDb(6)
+	r := t.GetRedisByDb(5)
 
 	if cmd := r.Incr("limit." + key); cmd.Val() > times {
 		return false
@@ -48,7 +48,7 @@ func (t *NonoRedis) Unmarshal(s []string, resuslt interface{}) error {
 	return err
 }
 func (t *NonoRedis) GetID(key string) int64 {
-	r := t.GetRedisByDb(10)
+	r := t.GetRedisByDb(9)
 	cmd := r.Incr("limit." + key)
 	if cmd.Err() == nil {
 		return cmd.Val()
@@ -56,14 +56,14 @@ func (t *NonoRedis) GetID(key string) int64 {
 	return -1
 }
 func (t *NonoRedis) Unlimit(key string) bool {
-	r := t.GetRedisByDb(11)
+	r := t.GetRedisByDb(5)
 	if cmd := r.Del("limit." + key); cmd.Err() == nil {
 		return true
 	}
 	return true
 }
 func (t *NonoRedis) LockWithExprie(s string, extime time.Duration) bool {
-	r := t.GetRedisByDb(12)
+	r := t.GetRedisByDb(4)
 	for {
 		if cmd := r.SetNX("lock."+s, true, extime); cmd.Val() == true {
 			return true
@@ -76,7 +76,7 @@ func (t *NonoRedis) Lock(s string) bool {
 	return t.LockWithExprie(s, 10*time.Second)
 }
 func (t *NonoRedis) IsLocked(s string) bool {
-	r := t.GetRedisByDb(12)
+	r := t.GetRedisByDb(4)
 	cmd := r.Get("lock." + s)
 	if len(cmd.Val()) > 0 {
 		return true
@@ -84,14 +84,14 @@ func (t *NonoRedis) IsLocked(s string) bool {
 	return false
 }
 func (t *NonoRedis) LockNoWait(s string) bool {
-	r := t.GetRedisByDb(12)
+	r := t.GetRedisByDb(4)
 	if cmd := r.SetNX("lock."+s, true, 10*time.Second); cmd.Val() == true {
 		return true
 	}
 	return false
 }
 func (t *NonoRedis) Unlock(s string) bool {
-	r := t.GetRedisByDb(12)
+	r := t.GetRedisByDb(4)
 	if cmd := r.Del("lock." + s); cmd.Err() == nil {
 		return true
 	}
