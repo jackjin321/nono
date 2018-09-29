@@ -7,12 +7,21 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func Readline(s string) (result string) {
 	fmt.Println(s)
 	fmt.Scanln(&result)
 	return result
+}
+func ReadPwd(s string) (result string) {
+	fmt.Println(s)
+	pwd, err := terminal.ReadPassword(0)
+	if err != nil {
+		return err.Error()
+	}
+	return string(pwd)
 }
 
 const (
