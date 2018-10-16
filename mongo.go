@@ -188,6 +188,11 @@ func (t *Mongo) GetMongo(coll string) *mgo.Collection {
 	return t.GetMongoByDB(t.db, coll)
 }
 
+//GetSession return Session for mgo
+func (t *Mongo) GetSession() *mgo.Session {
+	return t.GetMongo("a").Database.Session
+}
+
 //GetMongoByDB params coll return mgo.Coll
 func (t *Mongo) GetMongoByDB(db, coll string) *mgo.Collection {
 	i := rand.Intn(t.index)
@@ -196,7 +201,7 @@ func (t *Mongo) GetMongoByDB(db, coll string) *mgo.Collection {
 	if t.sessions[i].Ping() != nil {
 		s := t.newMongo()
 		if t.sessions[i] != nil {
-			temp := *t.sessions[i]
+			temp := t.sessions[i]
 			go func() {
 				time.Sleep(30 * time.Second)
 				temp.Close()
