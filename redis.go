@@ -10,7 +10,8 @@ import (
 	"github.com/go-redis/redis"
 )
 
-type NonoRedis struct {
+//Redis 封装的redis结构
+type Redis struct {
 	url     string
 	pwd     string
 	session []*redis.Client
@@ -18,36 +19,37 @@ type NonoRedis struct {
 	db      int
 }
 
-//GetCache getCache,if string=="",cache need reset
-func (t *NonoRedis) GetCache(key string) (string, error, bool) {
-	r := t.GetRedisByDb(7)
-	result := r.Get(key)
-	return result.String(), result.Err(), false
-
-}
-func (t *NonoRedis) SetCache(key string, value func() string) error {
-	return nil
-}
-
-//var cache *redis.Client
-func (t *NonoRedis) Limit(key string, times int64, extime time.Duration) bool {
+//Limit 输入(键值,次数,总时间)进行限制,如果没有限制返回true,被限制了返回false
+func (t *Redis) Limit(key string, times int64, extime time.Duration) bool {
 	r := t.GetRedisByDb(5)
-
-	if cmd := r.Incr("limit." + key); cmd.Val() > times {
+	cmd := r.Incr("limit." + key)
+	if cmd.Val() > times {
 		return false
-	} else {
-		if cmd.Val() == 1 {
-			r.Expire("limit."+key, extime)
-		}
+	}
+	if cmd.Val() == 1 {
+		r.Expire("limit."+key, extime)
+	}
+	return true
+}
+
+//Unlimit 解除某个键的限制
+func (t *Redis) Unlimit(key string) bool {
+	r := t.GetRedisByDb(5)
+	if cmd := r.Del("limit." + key); cmd.Err() == nil {
 		return true
 	}
+	return true
 }
-func (t *NonoRedis) Unmarshal(s []string, resuslt interface{}) error {
+
+//Unmarshal 返回某些特定的函数,暂时忘记使用方式,别用
+func (t *Redis) Unmarshal(s []string, resuslt interface{}) error {
 	ss := "[" + strings.Join(s, ",") + "]"
 	err := json.Unmarshal([]byte(ss), &resuslt)
 	return err
 }
-func (t *NonoRedis) GetID(key string) int64 {
+
+//GetID 在db9里进行id的递增运算并返回一个唯一的id
+func (t *Redis) GetID(key string) int64 {
 	r := t.GetRedisByDb(9)
 	cmd := r.Incr("limit." + key)
 	if cmd.Err() == nil {
@@ -55,14 +57,9 @@ func (t *NonoRedis) GetID(key string) int64 {
 	}
 	return -1
 }
-func (t *NonoRedis) Unlimit(key string) bool {
-	r := t.GetRedisByDb(5)
-	if cmd := r.Del("limit." + key); cmd.Err() == nil {
-		return true
-	}
-	return true
-}
-func (t *NonoRedis) LockWithExprie(s string, extime time.Duration) bool {
+
+//LockWithExprie 带过期时间的全局锁
+func (t *Redis) LockWithExprie(s string, extime time.Duration) bool {
 	r := t.GetRedisByDb(4)
 	for {
 		if cmd := r.SetNX("lock."+s, true, extime); cmd.Val() == true {
@@ -72,10 +69,13 @@ func (t *NonoRedis) LockWithExprie(s string, extime time.Duration) bool {
 	}
 }
 
-func (t *NonoRedis) Lock(s string) bool {
+//Lock 全局锁10秒
+func (t *Redis) Lock(s string) bool {
 	return t.LockWithExprie(s, 10*time.Second)
 }
-func (t *NonoRedis) IsLocked(s string) bool {
+
+//IsLocked 确定是够有全局锁
+func (t *Redis) IsLocked(s string) bool {
 	r := t.GetRedisByDb(4)
 	cmd := r.Get("lock." + s)
 	if len(cmd.Val()) > 0 {
@@ -83,22 +83,28 @@ func (t *NonoRedis) IsLocked(s string) bool {
 	}
 	return false
 }
-func (t *NonoRedis) LockNoWait(s string) bool {
+
+//LockNoWait 全局锁,但是不都塞直接返回
+func (t *Redis) LockNoWait(s string) bool {
 	r := t.GetRedisByDb(4)
 	if cmd := r.SetNX("lock."+s, true, 10*time.Second); cmd.Val() == true {
 		return true
 	}
 	return false
 }
-func (t *NonoRedis) Unlock(s string) bool {
+
+//Unlock 解除全局锁
+func (t *Redis) Unlock(s string) bool {
 	r := t.GetRedisByDb(4)
 	if cmd := r.Del("lock." + s); cmd.Err() == nil {
 		return true
 	}
 	return true
 }
-func NewRedis(url string, pwd string, db int) *NonoRedis {
-	t := &NonoRedis{
+
+//NewRedis 输入密码地址和db号码,返回封装的redis
+func NewRedis(url string, pwd string, db int) *Redis {
+	t := &Redis{
 		url: url,
 		pwd: pwd,
 		db:  db,
@@ -112,28 +118,33 @@ func NewRedis(url string, pwd string, db int) *NonoRedis {
 	}
 	return t
 }
-func (t *NonoRedis) GetRedis() *redis.Client {
+
+//GetRedis 返回默认db的redis.client
+func (t *Redis) GetRedis() *redis.Client {
 	return t.GetRedisByDb(t.db)
 }
-func (t *NonoRedis) GetRedisByDb(i int) *redis.Client {
+
+//GetRedisByDb 返回指定db号码的redis.client
+func (t *Redis) GetRedisByDb(i int) *redis.Client {
 	t.lock[i].Lock()
 	defer t.lock[i].Unlock()
 	if t.session[i] != nil && t.session[i].Ping().Err() == nil {
 		return t.session[i]
-	} else {
-		s := t.newRedisClient(i)
-		if t.session[i] != nil {
-			temp := *t.session[i]
-			go func() {
-				time.Sleep(30 * time.Second)
-				temp.Close()
-			}()
-		}
-		t.session[i] = s
-		return t.session[i]
 	}
+	s := t.newRedisClient(i)
+	if t.session[i] != nil {
+		temp := *t.session[i]
+		go func() {
+			time.Sleep(30 * time.Second)
+			temp.Close()
+		}()
+	}
+	t.session[i] = s
+	return t.session[i]
 }
-func (t *NonoRedis) newRedisClient(db int) *redis.Client {
+
+//
+func (t *Redis) newRedisClient(db int) *redis.Client {
 	//dd这里忽略了redis可能存在的故障的情况
 	for {
 		client := redis.NewClient(&redis.Options{
@@ -146,9 +157,8 @@ func (t *NonoRedis) newRedisClient(db int) *redis.Client {
 		if pong.Err() == nil {
 			fmt.Println("Connect Redis:", t.url, db, pong.Val())
 			return client
-		} else {
-			fmt.Println("Connect Redis:", t.url, t.pwd, pong.Err())
-			time.Sleep(1 * time.Second)
 		}
+		fmt.Println("Connect Redis:", t.url, t.pwd, pong.Err())
+		time.Sleep(1 * time.Second)
 	}
 }

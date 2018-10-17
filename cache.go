@@ -19,7 +19,7 @@ func CacheRead(name string) interface{} {
 	return Cache(name, 0, nil)
 }
 
-//Cache
+//Cache 输入名字,过期时间(秒), 需要运行的函数,如果超时,那么运行函数并把返回值缓存到名字里
 func Cache(name string, seccnd int64, f func() interface{}) interface{} {
 	c := cache[name]
 	if c == nil {

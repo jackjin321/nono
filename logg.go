@@ -10,11 +10,14 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+//Readline 真漂亮
 func Readline(s string) (result string) {
 	fmt.Println(s)
 	fmt.Scanln(&result)
 	return result
 }
+
+//ReadPwd 隐藏的模式读取字符串
 func ReadPwd(s string) (result string) {
 	fmt.Println(s)
 	pwd, err := terminal.ReadPassword(0)
@@ -25,10 +28,14 @@ func ReadPwd(s string) (result string) {
 }
 
 const (
+	//INFO 信息
 	INFO = "[INFO]"
-	ERR  = "[ERROR]"
+	//ERR 错误
+	ERR = "[ERROR]"
+	//WARN 警告
 	WARN = "[WARN]"
-	IMP  = "[IMP]"
+	//IMP 重要
+	IMP = "[IMP]"
 )
 
 var logs *Logg
@@ -40,6 +47,7 @@ func init() {
 	//logs.mongoURL = "mongodb://logsuser:logsuserpwd@10.0.0.49:13149"
 }
 
+// Logg 日志结构
 type Logg struct {
 	db       string
 	col      string
@@ -47,12 +55,15 @@ type Logg struct {
 	stop     bool
 	ch       chan interface{}
 }
+
+//Logs 日志结构2
 type Logs struct {
 	Tm interface{}
 	Tp interface{}
 	M  interface{}
 }
 
+//SetCollAndStart 按照输入coll和mongourl启动日志记录
 func SetCollAndStart(coll string, mongoURL string) {
 	logs.col = coll
 	logs.mongoURL = mongoURL
@@ -115,21 +126,33 @@ func (t *Logg) pl(v ...interface{}) {
 		t.ch <- temp
 	}
 }
+
+//Println 输出行
 func Println(v ...interface{}) {
 	logs.pl(v...)
 }
+
+//Printerr 输出错误
 func Printerr(v ...interface{}) {
 	Println("[ERROR]", v)
 }
+
+//Printinfo 输出正常日志
 func Printinfo(v ...interface{}) {
 	Println("[INFO]", v)
 }
+
+//Printwarn 输出警告
 func Printwarn(v ...interface{}) {
 	Println("[WARN]", v)
 }
+
+//PrintDebug 输出调试
 func PrintDebug(v ...interface{}) {
 	Println("[DEBUG]", v)
 }
+
+//AllOutPut 把一个对象格式化然后输出文本
 func AllOutPut(v interface{}) {
 	js, err := json.Marshal(v)
 	if err != nil {
