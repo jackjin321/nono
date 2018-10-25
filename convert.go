@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-
 	"runtime"
 	"strconv"
 	"strings"
@@ -52,7 +51,12 @@ func S2i(s string) int64 {
 
 //Hex2i 16进制字符串转换成int
 func Hex2i(s string) int64 {
-	i, _ := strconv.ParseInt(s, 0, 64)
+	var i int64
+	if string(s[:2]) == "0x" {
+		i, _ = strconv.ParseInt(s, 0, 64)
+	} else {
+		i, _ = strconv.ParseInt(s, 16, 64)
+	}
 	return i
 }
 
@@ -106,16 +110,43 @@ func I2s(f interface{}) string {
 	return ""
 }
 
-//Time2S 从时间格式转换成字符串,同时接受unix时间和默认的time
+//Time2S 从各种时间格式转换成字符串包含以下
+//float32/64,可以直接去掉小数位的unix时间
+//time
+//int32/64
+//string格式的unix时间
 func Time2S(f interface{}) string {
 	var tm time.Time
+	var unix int64
 	switch f.(type) {
 	case time.Time:
 		tm = f.(time.Time)
+	case string:
+		unix = S2i(f.(string))
+	case int:
+		unix = int64(f.(int))
+	case float32:
+		unix = int64(f.(float32))
+	case float64:
+		unix = int64(f.(float64))
 	case int64:
-		tm = time.Unix(f.(int64), 0)
+		unix = f.(int64)
 	}
+	for unix > 8537950667 {
+		unix = unix / 1000
+	}
+	if unix == 0 {
+		return fmt.Sprint(f)
+	}
+	tm = time.Unix(unix, 0)
 	return tm.Format("2006-01-02 15:04:05")
+}
+
+//Bsonid2time 通过mongodb的_id转换成可以
+func Bsonid2time(s string) string {
+	s = string(s[:8])
+	i := Hex2i(s)
+	return Time2S(i)
 }
 
 //S2Time 2006-01-02 15:04:05的格式转换成time
