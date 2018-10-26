@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"runtime"
 	"time"
 
 	"github.com/globalsign/mgo"
@@ -131,25 +132,29 @@ func (t *Logg) pl(v ...interface{}) {
 func Println(v ...interface{}) {
 	logs.pl(v...)
 }
+func getline() string {
+	_, file, line, _ := runtime.Caller(2)
+	return fmt.Sprintln(file, line)
+}
 
 //Printerr 输出错误
 func Printerr(v ...interface{}) {
-	Println("[ERROR]", v)
+	Println("[ERROR]", getline(), v)
 }
 
 //Printinfo 输出正常日志
 func Printinfo(v ...interface{}) {
-	Println("[INFO]", v)
+	Println("[INFO]", getline(), v)
 }
 
 //Printwarn 输出警告
 func Printwarn(v ...interface{}) {
-	Println("[WARN]", v)
+	Println("[WARN]", getline(), v)
 }
 
 //PrintDebug 输出调试
 func PrintDebug(v ...interface{}) {
-	Println("[DEBUG]", v)
+	Println("[DEBUG]", getline(), v)
 }
 
 //AllOutPut 把一个对象格式化然后输出文本
