@@ -1,7 +1,6 @@
 package nono
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 )
@@ -30,10 +29,8 @@ func Cache(name string, seccnd int64, f func() interface{}) interface{} {
 		return c.date
 	}
 	if time.Now().Unix()-c.time > seccnd {
-		fmt.Println(time.Now().Unix() - c.time)
 		if i := atomic.AddInt32(&c.lock, 1); i == 1 {
 			c.time = time.Now().Unix()
-			fmt.Println("do")
 			c.date = f()
 			atomic.StoreInt32(&c.lock, 0)
 			return c.date
