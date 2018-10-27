@@ -116,11 +116,10 @@ func I2s(f interface{}) string {
 //int32/64
 //string格式的unix时间
 func Time2S(f interface{}) string {
-	var tm time.Time
 	var unix int64
 	switch f.(type) {
 	case time.Time:
-		tm = f.(time.Time)
+		unix = f.(time.Time).Unix()
 	case string:
 		unix = S2i(f.(string))
 	case int:
@@ -138,7 +137,7 @@ func Time2S(f interface{}) string {
 	if unix == 0 {
 		return fmt.Sprint(f)
 	}
-	tm = time.Unix(unix, 0)
+	tm := time.Unix(unix, 0)
 	return tm.Format("2006-01-02 15:04:05")
 }
 
