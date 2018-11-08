@@ -193,6 +193,13 @@ func (t *Mongo) GetSession() *mgo.Session {
 	return t.GetMongo("a").Database.Session
 }
 
+//GetMongoClone 返回一个Session的Clone
+func (t *Mongo) GetMongoClone(coll string) (*mgo.Session, *mgo.Collection) {
+	s := t.GetSession().Clone()
+	m := s.DB(t.db).C(coll)
+	return s, m
+}
+
 //GetMongoByDB params coll return mgo.Coll
 func (t *Mongo) GetMongoByDB(db, coll string) *mgo.Collection {
 	i := rand.Intn(t.index)
