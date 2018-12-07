@@ -5,6 +5,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"math/big"
 	"runtime"
 	"strconv"
@@ -26,8 +27,8 @@ func NoerrByDepth(err error, depth int) bool {
 		pc, file, line, ok := runtime.Caller(depth)
 		if ok {
 			f := runtime.FuncForPC(pc)
-			Println("[ERROR]", f.Name(), err.Error())
-			Println("[ERROR]", file, line)
+			log.Println("[ERROR]", f.Name(), err.Error())
+			log.Println("[ERROR]", file, line)
 		}
 		return false
 	}
@@ -172,7 +173,7 @@ func StartAtTime(hours int, minute int) bool {
 	} else {
 		t = now
 	}
-	Printinfo("Will Start At:", hours, ":", minute)
+	log.Println("Will Start At:", hours, ":", minute)
 	t = time.Date(t.Year(), t.Month(), t.Day(), hours, minute, 0, 0, t.Location())
 	s := time.NewTimer(t.Sub(now))
 	<-s.C

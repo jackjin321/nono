@@ -1,13 +1,13 @@
 package nono
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"runtime"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/globalsign/mgo"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -30,139 +30,199 @@ func ReadPwd(s string) (result string) {
 
 const (
 	//INFO 信息
-	INFO = "[INFO]"
+	INFO = "[I]"
 	//ERR 错误
-	ERR = "[ERROR]"
+	ERR = "[E]"
 	//WARN 警告
-	WARN = "[WARN]"
+	WARN = "[W]"
 	//IMP 重要
-	IMP = "[IMP]"
+	IMP = "[P]"
 )
 
-var logs *Logg
+// var logs *Logg
+var lg *logg
 
 func init() {
-	logs = &Logg{db: "logs", col: "unclassfied"}
-	logs.ch = make(chan interface{}, 99999)
+	// logs = &Logg{db: "logs", col: "unclassfied"}
+	// logs.ch = make(chan interface{}, 99999)
 	//TODO
 	//logs.mongoURL = "mongodb://logsuser:logsuserpwd@10.0.0.49:13149"
+	lg = &logg{}
+	lg.SaveFile()
+	log.SetOutput(lg)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-// Logg 日志结构
-type Logg struct {
-	db       string
-	col      string
-	mongoURL string
-	stop     bool
-	ch       chan interface{}
+type logg struct {
+	name  string
+	write *os.File
 }
 
-//Logs 日志结构2
-type Logs struct {
-	Tm interface{}
-	Tp interface{}
-	M  interface{}
+func (t *logg) Write(w []byte) (n int, err error) {
+	n, err = fmt.Printf("%s", w)
+	return t.write.Write(w)
 }
 
-//SetCollAndStart 按照输入coll和mongourl启动日志记录
-func SetCollAndStart(coll string, mongoURL string) {
-	logs.col = coll
-	logs.mongoURL = mongoURL
-	if logs.mongoURL != "" {
-		go logs.start()
-	}
-}
-func (t *Logg) push(v []interface{}) {
-	if len(v) == 0 {
-		return
-	}
-	s, err := mgo.Dial(t.mongoURL)
-	if !Noerr(err) { //连接失败就把Log加入到列表末尾
-		log.Println("LOGERR", err.Error())
-		for _, vv := range v {
-			t.ch <- vv
-		}
-		return
-	}
-	defer s.Close()
-	c := s.DB(t.db).C(t.col)
-	c.Insert(v...)
-}
-func (t *Logg) start() {
-	tm := time.NewTimer(time.Second) //超时
-	pushLog := []interface{}{}       //需要增加的Log
-
-	push := func() { //增加log并清空
-		t.push(pushLog)
-		pushLog = []interface{}{}
-	}
-	for {
-		tm.Reset(time.Second)
-		select {
-		case s := <-t.ch:
-			pushLog = append(pushLog, s)
-			if len(pushLog) > 500 {
-				go push()
-			}
-		case <-tm.C:
-			go push()
-		}
-	}
-
-}
-func (t *Logg) pl(v ...interface{}) {
-	log.Println(v...)
-	if len(v) == 0 {
-		return
-	}
-	temp := Logs{}
-	temp.Tm = Time2S(time.Now())
-	if len(v) == 1 {
-		temp.M = v[0]
-	} else {
-		temp.Tp = v[0]
-		temp.M = fmt.Sprintln(v...)
-	}
-	if len(t.mongoURL) > 10 {
-		t.ch <- temp
-	}
-}
-
-//Println 输出行
-func Println(v ...interface{}) {
-	logs.pl(v...)
-}
-func getline() string {
-	_, file, line, _ := runtime.Caller(2)
-	return fmt.Sprintln(file, line)
-}
-
-//Printerr 输出错误
-func Printerr(v ...interface{}) {
-	Println("[ERROR]", getline(), v)
-}
-
-//Printinfo 输出正常日志
-func Printinfo(v ...interface{}) {
-	Println("[INFO]", getline(), v)
-}
-
-//Printwarn 输出警告
-func Printwarn(v ...interface{}) {
-	Println("[WARN]", getline(), v)
-}
-
-//PrintDebug 输出调试
-func PrintDebug(v ...interface{}) {
-	Println("[DEBUG]", getline(), v)
-}
-
-//AllOutPut 把一个对象格式化然后输出文本
-func AllOutPut(v interface{}) {
-	js, err := json.Marshal(v)
+// func (t *logg) saveRds() {
+// 	r := nono.NewRedis("127.0.0.1:6379", "", 0)
+// }
+func (t *logg) SaveFile() {
+	t.getname()
+	now := time.Now()
+	filename := now.Format("2006-01-02")
+	logfile, err := os.Create(filename)
 	if err != nil {
-		fmt.Println("EEERROR" + err.Error())
-	} else {
-		fmt.Println(string(js))
+		fmt.Println("error save log", err)
 	}
+	logfile.Write([]byte(strings.Join(os.Args, "-")))
+	lastlog := logfile
+	t.write = logfile
+
+	go func() {
+		for {
+			if time.Now().Day() != now.Day() {
+				name := time.Now().Format("2006-01-02")
+				file, err := os.Create(name)
+				if err != nil {
+					fmt.Println("error save log", err)
+				}
+				file.Write([]byte(strings.Join(os.Args, "-")))
+				t.write = file
+				time.Sleep(1 * time.Hour)
+				lastlog.Close()
+				lastlog = file
+			}
+			time.Sleep(60 * time.Second)
+		}
+	}()
 }
+func (t *logg) getname() (s string) {
+	for i, arg := range os.Args {
+		if i == 0 {
+			s = filepath.Base(arg)
+		} else {
+			s = s + " " + arg
+		}
+	}
+	t.name = s
+	return
+}
+
+// // Logg 日志结构
+// type Logg struct {
+// 	db       string
+// 	col      string
+// 	mongoURL string
+// 	stop     bool
+// 	ch       chan interface{}
+// }
+
+// //Logs 日志结构2
+// type Logs struct {
+// 	Tm interface{}
+// 	Tp interface{}
+// 	M  interface{}
+// }
+
+// //SetCollAndStart 按照输入coll和mongourl启动日志记录
+// func SetCollAndStart(coll string, mongoURL string) {
+// 	logs.col = coll
+// 	logs.mongoURL = mongoURL
+// 	if logs.mongoURL != "" {
+// 		go logs.start()
+// 	}
+// }
+// func (t *Logg) push(v []interface{}) {
+// 	if len(v) == 0 {
+// 		return
+// 	}
+// 	s, err := mgo.Dial(t.mongoURL)
+// 	if !Noerr(err) { //连接失败就把Log加入到列表末尾
+// 		log.Println("LOGERR", err.Error())
+// 		for _, vv := range v {
+// 			t.ch <- vv
+// 		}
+// 		return
+// 	}
+// 	defer s.Close()
+// 	c := s.DB(t.db).C(t.col)
+// 	c.Insert(v...)
+// }
+// func (t *Logg) start() {
+// 	tm := time.NewTimer(time.Second) //超时
+// 	pushLog := []interface{}{}       //需要增加的Log
+
+// 	push := func() { //增加log并清空
+// 		t.push(pushLog)
+// 		pushLog = []interface{}{}
+// 	}
+// 	for {
+// 		tm.Reset(time.Second)
+// 		select {
+// 		case s := <-t.ch:
+// 			pushLog = append(pushLog, s)
+// 			if len(pushLog) > 500 {
+// 				go push()
+// 			}
+// 		case <-tm.C:
+// 			go push()
+// 		}
+// 	}
+
+// }
+// func (t *Logg) pl(v ...interface{}) {
+// 	log.Println(v...)
+// 	if len(v) == 0 {
+// 		return
+// 	}
+// 	temp := Logs{}
+// 	temp.Tm = Time2S(time.Now())
+// 	if len(v) == 1 {
+// 		temp.M = v[0]
+// 	} else {
+// 		temp.Tp = v[0]
+// 		temp.M = fmt.Sprintln(v...)
+// 	}
+// 	if len(t.mongoURL) > 10 {
+// 		t.ch <- temp
+// 	}
+// }
+
+// //Println 输出行
+// func Println(v ...interface{}) {
+// 	logs.pl(v...)
+// }
+// func getline() string {
+// 	_, file, line, _ := runtime.Caller(2)
+// 	return fmt.Sprintln(file, line)
+// }
+
+// //Printerr 输出错误
+// func Printerr(v ...interface{}) {
+// 	Println("[ERROR]", getline(), v)
+// }
+
+// //Printinfo 输出正常日志
+// func Printinfo(v ...interface{}) {
+// 	Println("[INFO]", getline(), v)
+// }
+
+// //Printwarn 输出警告
+// func Printwarn(v ...interface{}) {
+// 	Println("[WARN]", getline(), v)
+// }
+
+// //PrintDebug 输出调试
+// func PrintDebug(v ...interface{}) {
+// 	Println("[DEBUG]", getline(), v)
+// }
+
+// //AllOutPut 把一个对象格式化然后输出文本
+// func AllOutPut(v interface{}) {
+// 	js, err := json.Marshal(v)
+// 	if err != nil {
+// 		fmt.Println("EEERROR" + err.Error())
+// 	} else {
+// 		fmt.Println(string(js))
+// 	}
+// }
