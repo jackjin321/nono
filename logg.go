@@ -69,7 +69,7 @@ func (t *logg) Write(w []byte) (n int, err error) {
 func (t *logg) SaveFile() {
 	t.getname()
 	now := time.Now()
-	filename := now.Format("2006-01-02")
+	filename := now.Format("2006-01-02 15:04:05")
 	logfile, err := os.Create(filename)
 	if err != nil {
 		fmt.Println("error save log", err)
@@ -81,7 +81,7 @@ func (t *logg) SaveFile() {
 	go func() {
 		for {
 			if time.Now().Day() != now.Day() {
-				name := time.Now().Format("2006-01-02")
+				name := time.Now().Format("2006-01-02 15:04:05")
 				file, err := os.Create(name)
 				if err != nil {
 					fmt.Println("error save log", err)
