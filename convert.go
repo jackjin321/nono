@@ -61,6 +61,11 @@ func Hex2i(s string) int64 {
 	return i
 }
 
+//I2Hex 1
+func I2Hex(i int64) string {
+	return fmt.Sprintf("0x%02x", i)
+}
+
 //Sha 进行sha256加密
 func Sha(s string) string {
 	hash := sha256.New()
