@@ -85,12 +85,15 @@ func (t *logg) SaveFile() {
 				file, err := os.Create(name)
 				if err != nil {
 					fmt.Println("error save log", err)
+					time.Sleep(1 * time.Second)
+					continue
 				}
 				file.Write([]byte(strings.Join(os.Args, "-")))
 				t.write = file
 				time.Sleep(1 * time.Hour)
 				lastlog.Close()
 				lastlog = file
+				now = time.Now()
 			}
 			time.Sleep(60 * time.Second)
 		}
