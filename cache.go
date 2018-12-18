@@ -33,12 +33,11 @@ func Cache(name string, seccnd int64, f func(id int64) (interface{}, int64)) int
 			if idd != 0 && idd == c.id {
 				c.time = time.Now().Unix()
 			}
-			if result == nil {
-				return c.date
+			if result != nil {
+				c.time = time.Now().Unix()
+				c.date = result
+				c.id = idd
 			}
-			c.time = time.Now().Unix()
-			c.date = result
-			c.id = idd
 			atomic.StoreInt32(&c.lock, 0)
 			return c.date
 		}
