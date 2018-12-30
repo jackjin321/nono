@@ -140,6 +140,7 @@ func (t *Mongo) Change(bs bson.M) mgo.Change {
 
 // NewMongo 1
 func NewMongo(url, db string) *Mongo {
+	log.Println("connect to mongo:", db)
 	max := 18
 	t := &Mongo{
 		url:   url,
@@ -158,6 +159,7 @@ func NewMongo(url, db string) *Mongo {
 		t.lock[i] = &lock
 	}
 	go t.incSession()
+	log.Println("mongo Connected")
 	return t
 }
 func (t *Mongo) incSession() {
