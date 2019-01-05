@@ -84,13 +84,18 @@ func (t *Redis) IsLocked(s string) bool {
 	return false
 }
 
-//LockNoWait 全局锁,但是不都塞直接返回
-func (t *Redis) LockNoWait(s string) bool {
+//Running 如果指定的s正在运行,返回true,如果首次运行,返回false
+func (t *Redis) Running(s string) bool {
 	r := t.GetRedisByDb(4)
 	if cmd := r.SetNX("lock."+s, true, 10*time.Second); cmd.Val() == true {
-		return true
+		return false
 	}
-	return false
+	return true
+}
+
+//RunStop 停止正在运行中的string
+func (t *Redis) RunStop(s string) bool {
+	return t.Unlock(s)
 }
 
 //Unlock 解除全局锁
