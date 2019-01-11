@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -41,6 +42,7 @@ const (
 
 // var logs *Logg
 var lg *logg
+var once sync.Once
 
 func init() {
 	// logs = &Logg{db: "logs", col: "unclassfied"}
@@ -48,7 +50,7 @@ func init() {
 	//TODO
 	//logs.mongoURL = "mongodb://logsuser:logsuserpwd@10.0.0.49:13149"
 	lg = &logg{}
-	lg.SaveFile()
+	//lg.SaveFile()
 	log.SetOutput(lg)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
@@ -60,6 +62,7 @@ type logg struct {
 
 func (t *logg) Write(w []byte) (n int, err error) {
 	n, err = fmt.Printf("%s", w)
+	once.Do(t.SaveFile)
 	return t.write.Write(w)
 }
 
@@ -74,7 +77,7 @@ func (t *logg) SaveFile() {
 	var err error
 	logfile, err = os.OpenFile(filename, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		logfile, err = os.Create(filename)
 		if err != nil {
 			fmt.Println("error save log", err)
@@ -101,7 +104,7 @@ func (t *logg) SaveFile() {
 				lastlog = file
 				now = time.Now()
 			}
-			time.Sleep(60 * time.Second)
+			time.Sleep(360 * time.Second)
 		}
 	}()
 }
