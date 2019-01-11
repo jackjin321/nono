@@ -54,25 +54,34 @@ func (t *Mongo) Idbson(min int64, max int64) bson.M {
 }
 
 //Insert ii must be a []
-func (t *Mongo) Insert(coll string, ii interface{}) {
+func (t *Mongo) Insert(coll string, ii interface{}) bool {
 	c := t.GetMongo(coll)
 	v := reflect.ValueOf(ii)
 	if v.Kind() != reflect.Slice {
-		return
+		return false
+	}
+	f := func(inter []interface{}) {
+	RE:
+		err := c.Insert(inter...)
+		if err != nil {
+			log.Println("insert err,RE:", err)
+			goto RE
+		}
 	}
 	l := v.Len()
 	inter := []interface{}{}
 	for i := 0; i < l; i++ {
-		if i >= 1000 {
-			fmt.Println(c.Insert(inter...))
+		if i >= 5000 && i%5000 == 0 {
+			f(inter)
 			inter = []interface{}{}
 		}
 		iii := v.Index(i).Interface()
 		inter = append(inter, iii)
 	}
 	if len(inter) > 0 {
-		fmt.Println(c.Insert(inter...))
+		f(inter)
 	}
+	return true
 }
 
 //Or return bson.M{"$or":value}
