@@ -8,7 +8,7 @@ import (
 )
 
 //HTTPGet 通过url地址和字典发送URL,并且使用result解析出返回值
-func HTTPGet(url string, p map[string]interface{}, result interface{}) error {
+func HTTPGet(url string, p map[string]interface{}, result interface{}) (string, error) {
 	q := ""
 	if p != nil && len(p) > 0 {
 		q = "?"
@@ -25,12 +25,12 @@ func HTTPGet(url string, p map[string]interface{}, result interface{}) error {
 
 	resp, err := http.Get(url + q)
 	if err != nil {
-		return err
+		return "", err
 	}
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return "", err
 	}
-	err = json.Unmarshal(b, &result)
-	return err
+	json.Unmarshal(b, &result)
+	return string(b), err
 }
