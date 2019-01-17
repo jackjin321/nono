@@ -127,7 +127,14 @@ func Time2S(f interface{}) string {
 	case time.Time:
 		unix = f.(time.Time).Unix()
 	case string:
-		unix = S2i(f.(string))
+		ss := f.(string)
+		unix = S2i(ss)
+		if unix == 0 {
+			if len(ss) > 8 {
+				ss = string(ss[:8])
+			}
+			unix = Hex2i(ss)
+		}
 	case int:
 		unix = int64(f.(int))
 	case float32:
