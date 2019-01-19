@@ -10,7 +10,6 @@ type cacheStruct struct {
 	time int64
 	lock int32
 	date interface{}
-	//TODO 加入一个固定短时间,如果一直就不刷新
 }
 
 var cache = make(map[string]*cacheStruct)
