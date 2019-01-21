@@ -6,13 +6,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math"
 	"math/big"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/math"
+	mathETH "github.com/ethereum/go-ethereum/common/math"
 )
 
 //Noerr 这个可以定位err的地址
@@ -37,7 +38,10 @@ func NoerrByDepth(err error, depth int) bool {
 
 //S2f 字符串转换float64忽略错误,如果错误返回0
 func S2f(s string) float64 {
-	f, _ := strconv.ParseFloat(s, 64)
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+		return 0.0
+	}
 	return f
 }
 
@@ -193,7 +197,7 @@ func StartAtTime(hours int, minute int) bool {
 	return true
 }
 
-var pow256 = math.BigPow(2, 256)
+var pow256 = mathETH.BigPow(2, 256)
 
 //Hex2Diff 暂时别用
 func Hex2Diff(s string) *big.Int {
