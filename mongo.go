@@ -16,15 +16,17 @@ import (
 
 // Mongo nono mongo struct
 type Mongo struct {
-	url      string         //连接字符串
-	db       string         //数据库
-	sessions []*mgo.Session //线程
-	lock     []*sync.Mutex  //线程锁
-	index    int            //上面数组的当前最大值
-	limit    int            //超过limt/s增加线程
-	max      int            //最大线程数
-	times    int64          //当前调用数
-	closed   bool
+	url           string         //连接字符串
+	db            string         //数据库
+	sessions      []*mgo.Session //线程
+	sessionRead   *mgo.Session
+	sessionStrong *mgo.Session
+	lock          []*sync.Mutex //线程锁
+	index         int           //上面数组的当前最大值
+	limit         int           //超过limt/s增加线程
+	max           int           //最大线程数
+	times         int64         //当前调用数
+	closed        bool
 }
 
 //Close all session and return
@@ -150,7 +152,7 @@ func (t *Mongo) Change(bs bson.M) mgo.Change {
 // NewMongo 1
 func NewMongo(url, db string) *Mongo {
 	log.Println("connect to mongo:", db)
-	max := 18
+	max := 5
 	t := &Mongo{
 		url:   url,
 		db:    db,
@@ -163,10 +165,17 @@ func NewMongo(url, db string) *Mongo {
 	t.lock = make([]*sync.Mutex, max)
 	for i := 0; i < 1; i++ {
 		s := t.newMongo()
+
 		var lock sync.Mutex
 		t.sessions[i] = s
 		t.lock[i] = &lock
 	}
+	s := t.newMongo()
+	s.SetMode(mgo.SecondaryPreferred, true)
+	t.sessionRead = s
+	s1 := t.newMongo()
+	s1.SetMode(mgo.Strong, true)
+	t.sessionStrong = s1
 	go t.incSession()
 	log.Println("mongo Connected")
 	return t
@@ -192,6 +201,48 @@ func (t *Mongo) incSession() {
 		}
 		time.Sleep(1 * time.Minute)
 	}
+}
+
+//GetMongoRead params coll return mgo.Coll
+func (t *Mongo) GetMongoRead(coll string) *mgo.Collection {
+	return t.GetMongoByDB(t.db, coll)
+}
+
+//GetMongoReadByDB params coll return mgo.Coll
+func (t *Mongo) GetMongoReadByDB(db, coll string) *mgo.Collection {
+	if t.sessionRead.Ping() != nil {
+		s := t.newMongo()
+		s.SetMode(mgo.SecondaryPreferred, true)
+		temp := t.sessionRead
+		go func() {
+			time.Sleep(30 * time.Second)
+			temp.Close()
+		}()
+
+		t.sessionRead = s
+	}
+	return t.sessionRead.DB(db).C(coll)
+}
+
+//GetMongoStrong params coll return mgo.Coll
+func (t *Mongo) GetMongoStrong(coll string) *mgo.Collection {
+	return t.GetMongoByDB(t.db, coll)
+}
+
+//GetMongoStrongByDB params coll return mgo.Coll
+func (t *Mongo) GetMongoStrongByDB(db, coll string) *mgo.Collection {
+	if t.sessionStrong.Ping() != nil {
+		s := t.newMongo()
+		s.SetMode(mgo.Strong, true)
+		temp := t.sessionStrong
+		go func() {
+			time.Sleep(30 * time.Second)
+			temp.Close()
+		}()
+
+		t.sessionStrong = s
+	}
+	return t.sessionStrong.DB(db).C(coll)
 }
 
 //GetMongo params coll return mgo.Coll
@@ -239,6 +290,7 @@ func (t *Mongo) newMongo() (s *mgo.Session) {
 			fmt.Println(runtime.Caller(3))
 			log.Println("mongoDial", t.url, err.Error())
 		} else {
+			s.SetMode(mgo.Monotonic, true)
 			return s
 		}
 	}
