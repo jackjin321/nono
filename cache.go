@@ -17,12 +17,13 @@ var cache sync.Map
 var onceClearCache sync.Once
 
 func clearCache() {
+	const cacheing = 120
 	for {
-		time.Sleep(600 * time.Second)
+		time.Sleep(cacheing * time.Second)
 		now := time.Now().Unix()
 		cache.Range(func(key, value interface{}) bool {
 			c, ok := value.(*cacheStruct)
-			if !ok || now-c.time > 600 {
+			if !ok || now-c.time > cacheing {
 				cache.Delete(key)
 			}
 			return false
