@@ -1,6 +1,7 @@
 package nono
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -12,14 +13,37 @@ type cacheStruct struct {
 	date interface{}
 }
 
-var cache = make(map[string]*cacheStruct)
+var cache sync.Map
+var onceClearCache sync.Once
+
+func clearCache() {
+	for {
+		time.Sleep(600 * time.Second)
+		now := time.Now().Unix()
+		cache.Range(func(key, value interface{}) bool {
+			c, ok := value.(*cacheStruct)
+			if !ok || now-c.time > 600 {
+				cache.Delete(key)
+			}
+			return false
+		})
+	}
+}
 
 //Cache 输入名字,过期时间(秒),一致的id,如果 id相同,那么即使超时了也不重新读取 需要运行的函数,如果超时,那么运行函数并把返回值缓存到名字里
 func Cache(name string, seccnd int64, f func(id int64) (interface{}, int64)) interface{} {
-	c := cache[name]
-	if c == nil {
-		c = &cacheStruct{}
-		cache[name] = c
+	go onceClearCache.Do(clearCache)
+RE:
+	cc, _ := cache.LoadOrStore(name, &cacheStruct{})
+	//c := cache[name]
+	//if c == nil {
+	//	c = &cacheStruct{}
+	//	cache[name] = c
+	//}
+	c, ok := cc.(*cacheStruct)
+	if !ok {
+		cache.Delete(name)
+		goto RE
 	}
 	if f == nil {
 		return c.date
