@@ -13,27 +13,33 @@ type cacheStruct struct {
 	date interface{}
 }
 
-var cache sync.Map
+var cache *sync.Map
 var onceClearCache sync.Once
 
 func clearCache() {
 	const cacheing = 120
-	for {
-		time.Sleep(cacheing * time.Second)
-		now := time.Now().Unix()
-		cache.Range(func(key, value interface{}) bool {
-			c, ok := value.(*cacheStruct)
-			if !ok || now-c.time > cacheing {
-				cache.Delete(key)
-			}
-			return false
-		})
-	}
+	var temp sync.Map
+	cache = &temp
+	go func() {
+		for {
+			time.Sleep(cacheing * time.Second)
+			var temp2 sync.Map
+			now := time.Now().Unix()
+			cache.Range(func(key, value interface{}) bool {
+				c, ok := value.(*cacheStruct)
+				if ok || now-c.time < cacheing {
+					temp2.Store(key, value)
+				}
+				return false
+			})
+			cache = &temp2
+		}
+	}()
 }
 
 //Cache 输入名字,过期时间(秒),一致的id,如果 id相同,那么即使超时了也不重新读取 需要运行的函数,如果超时,那么运行函数并把返回值缓存到名字里
 func Cache(name string, seccnd int64, f func(id int64) (interface{}, int64)) interface{} {
-	go onceClearCache.Do(clearCache)
+	onceClearCache.Do(clearCache)
 RE:
 	cc, _ := cache.LoadOrStore(name, &cacheStruct{})
 	//c := cache[name]
