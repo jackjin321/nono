@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -72,7 +74,8 @@ func (t *logg) Write(w []byte) (n int, err error) {
 func (t *logg) SaveFile() {
 	t.getname()
 	now := time.Now()
-	filename := t.name + "-" + now.Format("2006-01-02") + ".log"
+	filename := t.name + now.Format("2006-01-02") + ".log"
+	fmt.Println(filename)
 	var logfile *os.File
 	var err error
 	logfile, err = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND, 0666)
@@ -90,7 +93,7 @@ func (t *logg) SaveFile() {
 	go func() {
 		for {
 			if time.Now().Day() != now.Day() {
-				name := t.name + "-" + time.Now().Format("2006-01-02")
+				name := t.name + time.Now().Format("2006-01-02") + ".log"
 				file, err := os.Create(name)
 				if err != nil {
 					fmt.Println("error save log", err)
@@ -112,12 +115,26 @@ func (t *logg) getname() (s string) {
 	for i, arg := range os.Args {
 		if i == 0 {
 			s = filepath.Base(arg)
+			if runtime.GOOS != "windows" {
+				u, e := user.Current()
+				if e == nil {
+					ss := strings.Split(arg, "/")
+					s = u.HomeDir + "/log/" + ss[len(ss)-1]
+				}
+			}
 		} else {
-			s = s + " " + arg
+			s = s + "_" + arg
 		}
 	}
+	if runtime.GOOS == "windows" {
+		s = s + "_"
+	} else {
+		s = s + "/"
+	}
 	t.name = s
+	os.MkdirAll(s, 0777)
 	return
+
 }
 
 // // Logg 日志结构
