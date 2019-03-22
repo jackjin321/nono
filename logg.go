@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -13,6 +14,23 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 )
+
+//SmartPrint 打印一个struct的数据
+func SmartPrint(i interface{}) {
+	var kv = make(map[string]interface{})
+	vValue := reflect.ValueOf(i)
+	vType := reflect.TypeOf(i)
+	for i := 0; i < vValue.NumField(); i++ {
+		kv[vType.Field(i).Name] = vValue.Field(i)
+	}
+	fmt.Println("获取到数据:")
+	for k, v := range kv {
+		fmt.Print(k)
+		fmt.Print(":")
+		fmt.Print(v)
+		fmt.Println()
+	}
+}
 
 //Readline 真漂亮
 func Readline(s string) (result string) {
