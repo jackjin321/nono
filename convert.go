@@ -167,7 +167,8 @@ func Bsonid2time(s string) string {
 
 //S2Time 2006-01-02 15:04:05的格式转换成time
 func S2Time(s string) time.Time {
-	tm, _ := time.Parse("2006-01-02 15:04:05", s)
+	lo, _ := time.LoadLocation("Local")
+	tm, _ := time.ParseInLocation("2006-01-02 15:04:05", s, lo)
 	return tm
 }
 
