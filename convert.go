@@ -57,12 +57,28 @@ func S2i(s string) int64 {
 //Hex2i 16进制字符串转换成int
 func Hex2i(s string) int64 {
 	var i int64
+	var err error
 	if string(s[:2]) == "0x" {
-		i, _ = strconv.ParseInt(s, 0, 64)
+		i, err = strconv.ParseInt(s, 0, 64)
 	} else {
-		i, _ = strconv.ParseInt(s, 16, 64)
+		i, err = strconv.ParseInt(s, 16, 64)
+	}
+
+	if err == strconv.ErrRange {
+		return 0
 	}
 	return i
+}
+
+//Hex2Big 16进制字符串转换成int
+func Hex2Big(s string) (b *big.Int) {
+	if string(s[:2]) == "0x" {
+		b, _ = new(big.Int).SetString(s, 0)
+	} else {
+		b, _ = new(big.Int).SetString(s, 16)
+	}
+
+	return
 }
 
 //I2Hex 1
@@ -174,7 +190,7 @@ func S2Time(s string) time.Time {
 
 //StartAtTime 定时启动,会阻塞,当hour设置>24时候,直接返回
 func StartAtTime(hours int, minute int) bool {
-	if hours > 24 {
+	if hours > 24 || minute > 60 {
 		return true
 	}
 	now := time.Now()
