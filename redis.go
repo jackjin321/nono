@@ -116,7 +116,8 @@ func NewRedis(url string, pwd string, db int) *Redis {
 	}
 	t.session = make([]*redis.Client, 100)
 	t.lock = make([]*sync.Mutex, 100)
-	t.session[db] = t.newRedisClient(db)
+	t.session[db] = nil
+	// t.session[db] = t.newRedisClient(db)
 	for i := 0; i < len(t.lock); i++ {
 		var lock sync.Mutex
 		t.lock[i] = &lock
