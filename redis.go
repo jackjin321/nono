@@ -78,16 +78,13 @@ func (t *Redis) Lock(s string) bool {
 func (t *Redis) IsLocked(s string) bool {
 	r := t.GetRedisByDb(4)
 	cmd := r.Get("lock." + s)
-	if len(cmd.Val()) > 0 {
-		return true
-	}
-	return false
+	return len(cmd.Val()) > 0
 }
 
 //Running 如果指定的s正在运行,返回true,如果首次运行,返回false
 func (t *Redis) Running(s string) bool {
 	r := t.GetRedisByDb(4)
-	if cmd := r.SetNX("lock."+s, true, 10*time.Second); cmd.Val() == true {
+	if cmd := r.SetNX("lock."+s, true, 10*time.Second); cmd.Val() {
 		return false
 	}
 	return true
