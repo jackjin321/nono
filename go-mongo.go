@@ -93,7 +93,9 @@ func (t *BatchResult) All(result interface{}) error {
 		slicev = reflect.Append(slicev, temp.Elem()) //slicev是一个值的[],temp是一个指针,所以要获取elem,在使用反射包的增加数组
 		i++
 	}
-
+	if i == 0 {
+		return nil
+	}
 	resultV.Elem().Set(slicev.Slice(0, i))
 	return nil
 }
