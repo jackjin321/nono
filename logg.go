@@ -1,6 +1,7 @@
 package nono
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -33,10 +34,11 @@ func SmartPrint(i interface{}) {
 }
 
 //Readline 真漂亮
-func Readline(s string) (result string) {
+func Readline(s string) string {
 	fmt.Println(s)
-	fmt.Scanln(&result)
-	return result
+	reader := bufio.NewReader(os.Stdin)
+	data, _, _ := reader.ReadLine()
+	return string(data)
 }
 
 //ReadPwd 隐藏的模式读取字符串
