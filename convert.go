@@ -54,24 +54,23 @@ func S2i(s string) int64 {
 	return i
 }
 
-//Hex2i 16进制字符串转换成int
+//Hex2i 16进制字符串转换成int,这里必须确认数字不会越界,否则 还是用big.int的好
 func Hex2i(s string) int64 {
-	var i int64
-	var err error
-	if string(s[:2]) == "0x" {
-		i, err = strconv.ParseInt(s, 0, 64)
-	} else {
-		i, err = strconv.ParseInt(s, 16, 64)
-	}
-
-	if err == strconv.ErrRange {
+	b := Hex2Big(s)
+	if b == nil {
 		return 0
 	}
-	return i
+	if b.IsInt64() {
+		return b.Int64()
+	}
+	return 0
 }
 
 //Hex2Big 16进制字符串转换成int
 func Hex2Big(s string) (b *big.Int) {
+	if len(s) <= 2 {
+		return nil
+	}
 	if string(s[:2]) == "0x" {
 		b, _ = new(big.Int).SetString(s, 0)
 	} else {
