@@ -3,11 +3,16 @@ package nono
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
+
+//DEBUG 当为true时会显示很多信息
+var DEBUG = false
 
 //M 一个map[string]interface{}别名
 type M map[string]interface{}
@@ -57,7 +62,15 @@ func HTTP(u string, p map[string]interface{}) *HTTPStr {
 			params.Set(k, fmt.Sprint(v))
 		}
 	}
-	req, err := http.NewRequest("GET", u+"?"+params.Encode(), nil)
+	connect := "?"
+	if strings.Contains(u, "?") {
+		connect = "&"
+	}
+	url := u + connect + params.Encode()
+	if DEBUG {
+		fmt.Println(url)
+	}
+	req, err := http.NewRequest("GET", url, nil)
 
 	return &HTTPStr{req: req, client: c, err: err}
 }
@@ -133,10 +146,16 @@ type HTTPRespone struct {
 
 //JSON 输入一个结构体，unmarshal这个结构并返回unmausharl的错误
 func (t *HTTPRespone) JSON(result interface{}) error {
+	if t.Byte == nil {
+		return errors.New("replyNil")
+	}
 	return json.Unmarshal(t.Byte, &result)
 }
 
-//String 返回值的string格式
+//String 这里直接返回string,仅仅用于显示,请不要在代码中调用
 func (t *HTTPRespone) String() string {
+	if t.Byte == nil {
+		return "replyNil"
+	}
 	return string(t.Byte)
 }
