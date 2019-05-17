@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	mathETH "github.com/ethereum/go-ethereum/common/math"
 )
 
 //Noerr 这个可以定位err的地址
@@ -213,21 +211,19 @@ func StartAtTime(hours int, minute int) bool {
 	return true
 }
 
-var pow256 = mathETH.BigPow(2, 256)
+// //Hex2Diff 暂时别用
+// func Hex2Diff(s string) *big.Int {
+// 	bt := Hex2b(s)
+// 	i := new(big.Int).Div(pow256, new(big.Int).SetBytes(bt))
+// 	return i
+// }
 
-//Hex2Diff 暂时别用
-func Hex2Diff(s string) *big.Int {
-	bt := Hex2b(s)
-	i := new(big.Int).Div(pow256, new(big.Int).SetBytes(bt))
-	return i
-}
-
-//Diff2Hex 暂时别用
-func Diff2Hex(diff int64) string {
-	diff1 := big.NewInt(diff)
-	diff2 := new(big.Int).Div(pow256, diff1)
-	return B2hex(diff2.Bytes())
-}
+// //Diff2Hex 暂时别用
+// func Diff2Hex(diff int64) string {
+// 	diff1 := big.NewInt(diff)
+// 	diff2 := new(big.Int).Div(pow256, diff1)
+// 	return B2hex(diff2.Bytes())
+// }
 
 //B2hex 暂时别用
 func B2hex(b []byte) string {
